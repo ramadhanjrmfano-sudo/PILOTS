@@ -1,0 +1,6 @@
+{
+  "name": "PILOT SITE",
+  "description": "Premium Signal Request System featuring dynamic SportyBet predictions, interval modes, offline support, and synthesized Web Audio feedback.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
