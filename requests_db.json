@@ -1,0 +1,86 @@
+[
+  {
+    "testValue": true,
+    "id": "test-req-1780754056015"
+  },
+  {
+    "id": "req-1780775523136tod",
+    "userId": "admin-node-1",
+    "signalTime": "22:57:51",
+    "timestamp": "22:52:02",
+    "status": "READY",
+    "userPhone": "0743288942",
+    "userName": "System Admin",
+    "mode": "SCHEDULE"
+  },
+  {
+    "id": "req-1780763890916smq",
+    "userId": "admin-node-1",
+    "userPhone": "0743288942",
+    "signalTime": "19:39:48",
+    "status": "READY",
+    "timestamp": "19:38:10",
+    "userName": "System Admin",
+    "mode": "SCHEDULE"
+  },
+  {
+    "status": "READY",
+    "timestamp": "17:35:57",
+    "signalTime": "17:41:26",
+    "userPhone": "0743288942",
+    "userId": "admin-node-1",
+    "id": "req-1780756557654ea1",
+    "mode": "SCHEDULE",
+    "userName": "System Admin"
+  },
+  {
+    "id": "req-1780756553728qm6",
+    "userId": "admin-node-1",
+    "status": "READY",
+    "timestamp": "17:35:53",
+    "signalTime": "17:36:21",
+    "userPhone": "0743288942",
+    "userName": "System Admin",
+    "mode": "SCHEDULE"
+  },
+  {
+    "id": "req-1780756262819tje",
+    "userId": "admin-node-1",
+    "userPhone": "0743288942",
+    "signalTime": "17:33:38",
+    "timestamp": "17:31:02",
+    "status": "READY",
+    "userName": "System Admin",
+    "mode": "SCHEDULE"
+  },
+  {
+    "mode": "SCHEDULE",
+    "userName": "System Admin",
+    "status": "READY",
+    "timestamp": "17:22:35",
+    "signalTime": "17:25:42",
+    "userPhone": "0743288942",
+    "id": "req-1780755756127tef",
+    "userId": "admin-node-1"
+  },
+  {
+    "userId": "admin-node-1",
+    "id": "req-1780751750266r5b",
+    "userPhone": "0743288942",
+    "signalTime": "16:19:12",
+    "timestamp": "16:15:49",
+    "status": "READY",
+    "userName": "System Admin",
+    "mode": "SCHEDULE"
+  },
+  {
+    "id": "req-1780751531045otj",
+    "userId": "admin-node-1",
+    "userPhone": "0743288942",
+    "signalTime": "16:13:40",
+    "status": "READY",
+    "timestamp": "16:12:10",
+    "userName": "System Admin",
+    "mode": "SCHEDULE"
+  }
+]

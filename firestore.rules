@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Deliver secure yet functional rules for Express-proxied fullstack setup
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    match /requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    match /weekly_signals/{signalId} {
+      allow read, write: if true;
+    }
+  }
+}

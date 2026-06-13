@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User accounts on the Pilot Sportybet Signal System",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID" },
+        "name": { "type": "string", "description": "Human clean full name of the user" },
+        "username": { "type": "string", "description": "Unique username of the user" },
+        "phone": { "type": "string", "description": "User phone number used as identifier" },
+        "password": { "type": "string", "description": "Hashed or clear password for registration verification" },
+        "isApproved": { "type": "boolean", "description": "Whether the user registration request has been approved by the Admin" },
+        "isSuspended": { "type": "boolean", "description": "Whether the user registration request has been temporarily suspended" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "Role of the user in the system" },
+        "registeredAt": { "type": "string", "description": "Registration date timestamp" },
+        "registrationDate": { "type": "string", "description": "Registration ISO 8601 Date" },
+        "registrationTime": { "type": "string", "description": "Registration clock Time" },
+        "status": { "type": "string", "enum": ["Pending", "Approved", "Rejected", "Suspended"], "description": "Dynamic status of the membership" }
+      },
+      "required": ["id", "name", "username", "phone", "password", "isApproved", "role", "registeredAt", "registrationDate", "registrationTime", "status"]
+    },
+    "Request": {
+      "title": "Request",
+      "description": "Signal transmissions requested by users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique request ID" },
+        "userId": { "type": "string", "description": "The requester user ID" },
+        "userName": { "type": "string", "description": "The requester name" },
+        "userPhone": { "type": "string", "description": "The requester phone number" },
+        "signalTime": { "type": "string", "description": "Calculated signal time" },
+        "mode": { "type": "string", "description": "Mode of the system signal" },
+        "status": { "type": "string", "description": "Current status" },
+        "timestamp": { "type": "string", "description": "Time of request" }
+      },
+      "required": ["id", "userId", "userName", "userPhone", "signalTime", "mode", "status", "timestamp"]
+    },
+    "WeeklySignal": {
+      "title": "WeeklySignal",
+      "description": "Weekly signal configurations managed by admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique signal ID" },
+        "day": { "type": "string", "description": "Day of the week (e.g. Jumatatu)" },
+        "time": { "type": "string", "description": "Clock time of the signal" },
+        "odd": { "type": "string", "description": "Target betting odds" },
+        "accuracy": { "type": "string", "description": "Predicted percentage accuracy" },
+        "multiplier": { "type": "string", "description": "Signal multiplier target" },
+        "status": { "type": "string", "enum": ["Active", "Expired"], "description": "Current status of the signal" }
+      },
+      "required": ["id", "day", "time", "odd", "accuracy", "multiplier", "status"]
+    },
+    "AdminUpdate": {
+      "title": "AdminUpdate",
+      "description": "System updates and announcements published by the admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique update ID" },
+        "title": { "type": "string", "description": "Title of the update announcement" },
+        "message": { "type": "string", "description": "Details / body of the announcement text" },
+        "createdAt": { "type": "string", "description": "Date and time when published" },
+        "status": { "type": "string", "description": "Status of the update (e.g. Active)" }
+      },
+      "required": ["id", "title", "message", "createdAt", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User accounts collection in Firestore"
+    },
+    "/requests/{requestId}": {
+      "schema": "Request",
+      "description": "Users requests collection in Firestore"
+    },
+    "/weekly_signals/{signalId}": {
+      "schema": "WeeklySignal",
+      "description": "Weekly signals collection in Firestore"
+    },
+    "/admin_updates/{updateId}": {
+      "schema": "AdminUpdate",
+      "description": "Admin system updates and announcements"
+    }
+  }
+}

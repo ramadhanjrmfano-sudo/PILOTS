@@ -12,7 +12,7 @@ import { synth } from '../utils/audio';
 interface AuthScreensProps {
   onLoginSuccess: (user: AppUser) => void;
   registeredUsers: AppUser[];
-  onRegisterUser: (name: string, phone: string, password: string) => void;
+  onRegisterUser: (user: AppUser) => void;
   isAdminRoute: boolean;
   onSwitchView: (isAdmin: boolean) => void;
 }
@@ -25,10 +25,19 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({
   onSwitchView,
 }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [supabaseStatus, setSupabaseStatus] = useState<{ configured: boolean; url: string | null } | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/supabase-status')
+      .then(res => res.json())
+      .then(data => setSupabaseStatus(data))
+      .catch(() => {});
+  }, []);
   
   // Forms state
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -63,12 +72,13 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({
     setIsLogin(!isLogin);
     setPhone('');
     setName('');
+    setUsername('');
     setPassword('');
     setErrorMsg('');
     setSuccessMsg('');
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -81,90 +91,75 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({
         const mins = Math.floor(remainingSec / 60);
         const secs = remainingSec % 60;
         synth.playError();
-        setErrorMsg(`UMEZUIWA: Umeingiza taarifa zisizo sahihi mara 3. Subiri dakika ${mins}:${secs < 10 ? '0' : ''}${secs} kabla ya kujaribu tena!`);
+        setErrorMsg(`UMEZUIWA: Umeingiza taarifa zisizo sahihi mara 7. Subiri dakika ${mins}:${secs < 10 ? '0' : ''}${secs} kabla ya kujaribu tena!`);
         return;
       }
     }
 
     if (!phone || !password) {
       synth.playError();
-      setErrorMsg('Tafadhali jaza namba ya simu na password.');
+      setErrorMsg('Tafadhali jaza namba ya simu / username na password.');
       return;
     }
 
-    if (isAdminRoute) {
-      // Admin exclusive validation rule
-      if (phone.trim() === '0743288942' && password === 'Examplejr17') {
-        const adminUser = registeredUsers.find(u => u.phone === '0743288942');
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      });
+
+      if (response.ok) {
+        const user = await response.json();
         localStorage.removeItem('pilot_failed_attempts');
         localStorage.removeItem('pilot_lockout_time');
-        synth.playSuccess();
-        if (adminUser) {
-          onLoginSuccess(adminUser);
-        } else {
-          // Safety fallback if database was cleared
-          onLoginSuccess({
-            id: 'admin-node-1',
-            name: 'System Admin',
-            phone: '0743288942',
-            password: 'Examplejr17',
-            isApproved: true,
-            role: 'admin',
-            registeredAt: '2026-06-04 12:00'
-          });
-        }
+        synth.playAviatorCrash();
+        onLoginSuccess(user);
       } else {
+        const errData = await response.json();
+        const errMsg = errData.error || 'Namba ya simu au password si sahihi!';
         synth.playError();
-        const currentFailures = Number(localStorage.getItem('pilot_failed_attempts') || '0') + 1;
-        localStorage.setItem('pilot_failed_attempts', String(currentFailures));
 
-        if (currentFailures >= 3) {
-          const lockoutUntil = Date.now() + 60 * 60 * 1000;
+        if (response.status === 403 || errData.locked) {
+          const lockoutUntil = Date.now() + 15 * 60 * 1000;
           localStorage.setItem('pilot_lockout_time', String(lockoutUntil));
-          setLockoutTimeLeft(3600);
-          setErrorMsg('WARNING: Umeingiza namba au password isiyo sahihi mara 3! Umezuiwa (lockout) kutumia mfumo kwa muda wa saa 1 (lisaa limoja).');
+          setLockoutTimeLeft(900);
+          setErrorMsg(errMsg);
         } else {
-          const attemptsLeft = 3 - currentFailures;
-          setErrorMsg(`Namba ya simu au password isiyo sahihi kwa Admin! Una nafasi ${attemptsLeft} zaidi za kujaribu kabla ya kuzuiliwa kwa saa 1.`);
+          const currentFailures = Number(localStorage.getItem('pilot_failed_attempts') || '0') + 1;
+          localStorage.setItem('pilot_failed_attempts', String(currentFailures));
+
+          if (currentFailures >= 7) {
+            const lockoutUntil = Date.now() + 15 * 60 * 1000;
+            localStorage.setItem('pilot_lockout_time', String(lockoutUntil));
+            setLockoutTimeLeft(900);
+            setErrorMsg('UMEZUIWA: Umeingiza password isiyo sahihi mara 7! Umezuiwa (lockout) kutumia mfumo huu kwa muda wa dakika 15 kulinda udukuzi.');
+          } else {
+            const attemptsLeft = 7 - currentFailures;
+            setErrorMsg(`Namba ya simu/Username au password si sahihi! Una nafasi ${attemptsLeft} zaidi za kujaribu kabla ya kuzuiliwa kwa dakika 15.`);
+          }
         }
       }
-    } else {
-      // Normal User Login validation rule
-      const foundUser = registeredUsers.find(
-        u => u.phone.trim() === phone.trim() && u.password === password
-      );
-
-      if (foundUser) {
-        localStorage.removeItem('pilot_failed_attempts');
-        localStorage.removeItem('pilot_lockout_time');
-        synth.playSuccess();
-        onLoginSuccess(foundUser);
-      } else {
-        synth.playError();
-        const currentFailures = Number(localStorage.getItem('pilot_failed_attempts') || '0') + 1;
-        localStorage.setItem('pilot_failed_attempts', String(currentFailures));
-
-        if (currentFailures >= 3) {
-          const lockoutUntil = Date.now() + 60 * 60 * 1000;
-          localStorage.setItem('pilot_lockout_time', String(lockoutUntil));
-          setLockoutTimeLeft(3600);
-          setErrorMsg('WARNING: Umeingiza namba au nenosiri lisilo sahihi mara 3! Umezuiwa (lockout) kutumia mfumo kwa muda wa saa 1 (lisaa limoja).');
-        } else {
-          const attemptsLeft = 3 - currentFailures;
-          setErrorMsg(`Namba ya simu au password isiyo sahihi! Una nafasi ${attemptsLeft} zaidi za kujaribu kabla ya kuzuiliwa kwa saa 1.`);
-        }
-      }
+    } catch (err) {
+      synth.playError();
+      setErrorMsg('Mawasiliano na server yamefeli. Tafadhali jaribu tena baadae.');
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!name || !phone || !password) {
+    if (!name || !username || !phone || !password) {
       synth.playError();
       setErrorMsg('Tafadhali jaza taarifa zote kukamilisha usajili.');
+      return;
+    }
+
+    if (username.length < 3) {
+      synth.playError();
+      setErrorMsg('Jina la mtumiaji (Username) lazima liwe na angalau herufi 3.');
       return;
     }
 
@@ -181,17 +176,27 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({
       return;
     }
 
-    // Check if phone already registered
-    const exists = registeredUsers.some(u => u.phone.trim() === phone.trim());
-    if (exists) {
-      synth.playError();
-      setErrorMsg('Namba hii ya simu tayari imesajiliwa.');
-      return;
-    }
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, username, phone, password })
+      });
 
-    onRegisterUser(name, phone, password);
-    synth.playSuccess();
-    setSuccessMsg('Usajili Umefanikiwa kikamilifu! Sasa unaingizwa kwenye kurasa ya kusubiri kibali cha Admin.');
+      if (response.ok) {
+        const newUser = await response.json();
+        onRegisterUser(newUser);
+        synth.playSuccess();
+        setSuccessMsg('Usajili Umefanikiwa kikamilifu! Sasa unaingizwa kwenye kurasa ya kusubiri kibali cha Admin.');
+      } else {
+        const errData = await response.json();
+        synth.playError();
+        setErrorMsg(errData.error || 'Namba hii tayari imesajiliwa au usajili umefeli.');
+      }
+    } catch (err) {
+      synth.playError();
+      setErrorMsg('Inashindwa kuwasiliana na server kwa sasa. Tafadhali jaribu tena.');
+    }
   };
 
   const fillQuickAccess = (phoneVal: string, passVal: string) => {
@@ -208,7 +213,7 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({
   const renderLockoutMessage = () => {
     const mins = Math.floor(lockoutTimeLeft / 60);
     const secs = lockoutTimeLeft % 60;
-    return `Kujaribu kuingia kumezuiliwa! Tafadhali subiri dakika ${mins}:${secs < 10 ? '0' : ''}${secs} hadi lisaa limalizike ili ujaribu tena.`;
+    return `Kujaribu kuingia kumezuiliwa! Tafadhali subiri dakika ${mins}:${secs < 10 ? '0' : ''}${secs} ili ujaribu tena.`;
   };
 
   return (
@@ -235,6 +240,18 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({
           <p className="text-[9px] text-[#C0C0C0]/60 font-mono tracking-widest mt-1 uppercase">
             {isAdminRoute ? 'ADMIN ACCESS GATEWAY' : isLogin ? 'MEMBER SYSTEM INSTANCE' : 'REGISTER TO GET ACTIVE SIGNALS'}
           </p>
+          {supabaseStatus && (
+            <div className="flex justify-center mt-2.5">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[8px] font-mono tracking-wider font-extrabold uppercase border transition-all ${
+                supabaseStatus.configured 
+                  ? 'bg-emerald-950/30 text-emerald-400 border-emerald-500/20' 
+                  : 'bg-amber-950/20 text-amber-500 border-amber-500/10'
+              }`}>
+                <span className={`h-1 cursor-default w-1 rounded-full ${supabaseStatus.configured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span>Supabase Auth: {supabaseStatus.configured ? "ONLINE" : "OFFLINE (Local Mode)"}</span>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Direct Link Info box to clearly show separate links */}
@@ -285,15 +302,15 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
               <label className="block text-[10px] font-mono uppercase tracking-wider text-[#C0C0C0]/70 mb-1.5">
-                {isAdminRoute ? 'Namba ya Simu ya Admin' : 'Namba ya Simu Contacts'}
+                {isAdminRoute ? 'Namba ya Simu/Username ya Admin' : 'Jina la Mtumiaji au Namba ya Simu'}
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#C0C0C0]/50">
-                  <Phone className="w-4 h-4" />
+                  <User className="w-4 h-4" />
                 </span>
                 <input
                   type="text"
-                  placeholder={isAdminRoute ? 'Mfano: 0743288942' : 'Mfano: 0712345678'}
+                  placeholder={isAdminRoute ? 'Mfano: admin au 0743288942' : 'Ingiza Username au Namba ya Simu'}
                   disabled={lockoutTimeLeft > 0}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -349,6 +366,24 @@ export const AuthScreens: React.FC<AuthScreensProps> = ({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full bg-black/60 border border-[#C0C0C040] rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-[#C0C0C030] outline-none focus:border-[#39FF14] focus:shadow-[0_0_10px_rgba(57,255,20,0.2)] transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-[#C0C0C0]/70 mb-1.5">
+                Jina la Mtumiaji (Username)
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#C0C0C0]/50">
+                  <User className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Mfano: allysalum"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-black/60 border border-[#C0C0C040] rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-[#C0C0C030] outline-none focus:border-[#39FF14] focus:shadow-[0_0_10px_rgba(57,255,20,0.2)] transition-all font-mono"
                 />
               </div>
             </div>

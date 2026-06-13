@@ -64,16 +64,31 @@ export const SignalCard: React.FC<SignalCardProps> = ({
                 <span className="h-2 w-2 bg-[#39FF14] rounded-full animate-ping" />
                 <span>CALCULATING VECTOR...</span>
               </motion.div>
+            ) : (statusText === 'FINISHED' || statusText === 'IDLE' || !signalTime) ? (
+              <motion.div
+                key="press-button-trigger"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="flex flex-col items-center justify-center text-center px-2"
+              >
+                <span className="text-emerald-400 font-mono text-[13px] sm:text-[15px] font-black tracking-wider animate-pulse uppercase leading-tight max-w-[280px] sm:max-w-[400px]">
+                  Press button to get new signal
+                </span>
+                <span className="text-[9px] text-zinc-500 font-mono tracking-widest mt-1 uppercase">
+                  (Bonyeza kitufe kupata signal)
+                </span>
+              </motion.div>
             ) : (
               <motion.span
-                key={signalTime || 'none'}
+                key={signalTime}
                 initial={{ opacity: 0, filter: 'blur(10px)' }}
                 animate={{ opacity: 1, filter: 'blur(0px)' }}
                 exit={{ opacity: 0, filter: 'blur(6px)' }}
                 transition={{ duration: 0.3 }}
                 className="font-mono font-bold text-5xl sm:text-6xl md:text-7xl text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
               >
-                {signalTime || '-- : -- : --'}
+                {signalTime}
               </motion.span>
             )}
           </AnimatePresence>

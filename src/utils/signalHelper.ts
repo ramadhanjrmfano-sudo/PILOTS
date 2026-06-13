@@ -36,42 +36,21 @@ export function secondsToTimeString(totalSecs: number): string {
  */
 export function getNextSignalTime(currentTimeStr: string, mode: SignalMode): { signalTime: string | null; message: string } {
   if (mode === 'SCHEDULE') {
-    // Determine operational window:
-    // First signal is 22:55:27, Last signal is 02:07:23 (spans overnight).
-    // If the current time is after 02:07:23 AND before 22:55:27, there are indeed no signals "left today" in this sequence.
-    // This perfectly matches Example 3: "08:50:40" -> "No more signals available today."
-    if (currentTimeStr > "02:07:23" && currentTimeStr < "22:55:27") {
-      return {
-        signalTime: null,
-        message: "No more signals available today."
-      };
+    // Add 25 seconds margin to current system clock so that the user is always presented with a usable "muda wa mbele"
+    const currentSecs = timeStringToSeconds(currentTimeStr);
+    const minAllowedSecs = (currentSecs + 25) % 86400;
+    const minAllowedTimeStr = secondsToTimeString(minAllowedSecs);
+
+    // Find the first scheduled time greater than our safe future threshold
+    let match = SIGNAL_SCHEDULE_TIMES.find(t => t > minAllowedTimeStr);
+    
+    // If no remaining slot is available onwards, wrap around to the first slot of the schedule list
+    if (!match && SIGNAL_SCHEDULE_TIMES.length > 0) {
+      match = SIGNAL_SCHEDULE_TIMES[0];
     }
 
-    // Since the array spans across midnight (starts with 22:55 and ends with 02:07),
-    // we search from the current time.
-    // If current time is after 22:55:00 (e.g. 23:15:00), we search elements in the 22:xx, 23:xx list, and also elements after midnight.
-    // Let's create an ordered list starting at 22:55:27 all the way to 02:07:23.
-    // Since we transition over midnight, we can represent times as relative to the start of the operational session.
-    // To do this simply: If current time is >= "22:55:27", we search for any signal >= current time.
-    // If current time is <= "02:07:23" (representing early next morning), we search for signals that are <= "02:07:23" and greater than current time.
-    
-    if (currentTimeStr >= "22:55:27") {
-      // Searching late-night signals
-      const match = SIGNAL_SCHEDULE_TIMES.filter(t => t >= "22:55:27" && t > currentTimeStr);
-      if (match.length > 0) {
-        return { signalTime: match[0], message: "READY" };
-      }
-      // If none found in late night (all passed e.g. after 23:50:37), the next one is index that starts after midnight
-      const morningMatch = SIGNAL_SCHEDULE_TIMES.filter(t => t < "22:55:27");
-      if (morningMatch.length > 0) {
-        return { signalTime: morningMatch[0], message: "READY" };
-      }
-    } else {
-      // Current time is early morning (<= "02:07:23") or between midnight and 02:07:23
-      const morningMatch = SIGNAL_SCHEDULE_TIMES.filter(t => t < "22:55:27" && t > currentTimeStr);
-      if (morningMatch.length > 0) {
-        return { signalTime: morningMatch[0], message: "READY" };
-      }
+    if (match) {
+      return { signalTime: match, message: "READY" };
     }
 
     return {
@@ -112,15 +91,14 @@ export function getNextSignalTime(currentTimeStr: string, mode: SignalMode): { s
 
     nextSlotSecs += selectedOffset;
 
-    // Format output
-    let resultTime = secondsToTimeString(nextSlotSecs);
-
-    // Guarantee that the computed signalTime is greater than the current time
-    if (resultTime <= currentTimeStr) {
+    // Guarantee that the computed signalTime is greater than the current time + 25 seconds margin
+    const minAllowedSecs = currentSecs + 25;
+    while (nextSlotSecs < minAllowedSecs) {
       nextSlotSecs += intervalSecs;
-      resultTime = secondsToTimeString(nextSlotSecs);
     }
 
+    // Format output
+    const resultTime = secondsToTimeString(nextSlotSecs);
     return { signalTime: resultTime, message: "READY" };
   }
 }

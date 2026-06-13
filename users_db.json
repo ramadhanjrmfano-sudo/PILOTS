@@ -1,0 +1,16 @@
+[
+  {
+    "id": "admin-node-1",
+    "name": "System Admin",
+    "username": "0743288942",
+    "phone": "0743288942",
+    "password": "Examplejr17",
+    "isApproved": true,
+    "isSuspended": false,
+    "role": "admin",
+    "registeredAt": "2026-06-04 12:00",
+    "registrationDate": "2026-06-04",
+    "registrationTime": "12:00",
+    "status": "Approved"
+  }
+]
